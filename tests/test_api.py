@@ -12,6 +12,5 @@ def test_explainability_contract() -> None:
     with TestClient(app=app) as client:
         payload = client.get("/v1/explainability-contract").json()
 
-    assert payload["shap"].startswith("Global")
-    assert "Counterfactual" in payload["dice"]
-
+    assert payload["drivers"].startswith("Global")
+    assert "Action hints" in payload["counterfactuals"]
