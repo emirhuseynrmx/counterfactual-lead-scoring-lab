@@ -61,12 +61,23 @@ class LeadScore(BaseModel):
     recommended_actions: list[str]
 
 
+class EvidenceCheck(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    check: str
+    status: str
+    evidence: str
+
+
 class LeadModelReport(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     rows: int
     conversion_rate: float
     roc_auc: float
+    holdout_rows: int
+    feature_count: int
+    evidence_checks: list[EvidenceCheck]
     top_drivers: list[dict[str, float | str]]
     sample_scores: list[LeadScore]
     counterfactual_playbook: list[str]

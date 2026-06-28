@@ -11,5 +11,10 @@ def test_train_lead_model() -> None:
 
     assert report.rows >= 30
     assert 0 <= report.roc_auc <= 1
+    assert report.holdout_rows > 0
+    assert {item.check for item in report.evidence_checks} >= {
+        "holdout_split",
+        "target_leakage_scan",
+    }
     assert report.top_drivers
     assert any("counterfactual" in item for item in report.counterfactual_playbook)

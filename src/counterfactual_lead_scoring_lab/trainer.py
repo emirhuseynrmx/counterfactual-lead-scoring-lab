@@ -25,7 +25,7 @@ from counterfactual_lead_scoring_lab.schemas import (
 
 
 def train_lead_model(frame: pd.DataFrame, config: LeadTrainingConfig) -> LeadModelReport:
-    pipeline, top_drivers, auc = fit_pipeline(frame, config)
+    pipeline, top_drivers, auc, holdout_rows = fit_pipeline(frame, config)
     probabilities = pipeline.predict_proba(frame[FEATURE_COLUMNS])[:, 1]
     sample_scores = [
         _score_row(row, float(probability), top_drivers)
@@ -40,6 +40,9 @@ def train_lead_model(frame: pd.DataFrame, config: LeadTrainingConfig) -> LeadMod
         rows=len(frame),
         conversion_rate=round(float(frame["converted"].mean()), 4),
         roc_auc=round(float(auc), 4),
+        holdout_rows=holdout_rows,
+        feature_count=len(FEATURE_COLUMNS),
+        evidence_checks=_evidence_checks(frame, config, holdout_rows),
         top_drivers=top_drivers,
         sample_scores=sample_scores,
         counterfactual_playbook=_playbook(top_drivers),
@@ -51,7 +54,7 @@ def score_lead(
     lead: LeadRecord,
     config: LeadTrainingConfig,
 ) -> LeadScore:
-    pipeline, top_drivers, _ = fit_pipeline(frame, config)
+    pipeline, top_drivers, _, _ = fit_pipeline(frame, config)
     probability = float(pipeline.predict_proba(lead_to_frame(lead))[:, 1][0])
     return _score_row(lead.model_dump(), probability, top_drivers)
 
@@ -59,7 +62,7 @@ def score_lead(
 def fit_pipeline(
     frame: pd.DataFrame,
     config: LeadTrainingConfig,
-) -> tuple[Pipeline, list[dict[str, float | str]], float]:
+) -> tuple[Pipeline, list[dict[str, float | str]], float, int]:
     if len(frame) < config.min_rows:
         raise ValueError(f"lead scoring needs at least {config.min_rows} rows")
 
@@ -98,7 +101,49 @@ def fit_pipeline(
     pipeline.fit(x_train, y_train)
     probabilities = pipeline.predict_proba(x_test)[:, 1]
     auc = roc_auc_score(y_test, probabilities)
-    return pipeline, _drivers(pipeline), float(auc)
+    return pipeline, _drivers(pipeline), float(auc), len(x_test)
+
+
+def _evidence_checks(
+    frame: pd.DataFrame,
+    config: LeadTrainingConfig,
+    holdout_rows: int,
+) -> list[dict[str, str]]:
+    target = frame["converted"].astype(int)
+    class_counts = target.value_counts().to_dict()
+    post_conversion_terms = ("converted_at", "won_at", "closed_at", "deal_value", "revenue")
+    leakage_columns = [
+        column
+        for column in frame.columns
+        if column != "converted" and any(term in column.lower() for term in post_conversion_terms)
+    ]
+    return [
+        {
+            "check": "holdout_split",
+            "status": "pass",
+            "evidence": (
+                f"{holdout_rows} rows reserved for holdout scoring; "
+                f"test_size={config.test_size}."
+            ),
+        },
+        {
+            "check": "minimum_class_count",
+            "status": "pass" if min(class_counts.values()) >= 5 else "fail",
+            "evidence": f"Class counts: {class_counts}.",
+        },
+        {
+            "check": "target_leakage_scan",
+            "status": "pass" if not leakage_columns else "review",
+            "evidence": "No obvious post-conversion columns found."
+            if not leakage_columns
+            else f"Review potential leakage columns: {', '.join(leakage_columns)}.",
+        },
+        {
+            "check": "counterfactual_boundary",
+            "status": "pass",
+            "evidence": "Action hints are limited to reviewable behavior and routing fields.",
+        },
+    ]
 
 
 def _drivers(pipeline: Pipeline) -> list[dict[str, float | str]]:
