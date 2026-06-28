@@ -1,0 +1,50 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "counterfactual-lead-scoring-lab"
+version = "0.1.0"
+description = "Litestar lead scoring lab with Pydantic validation, model training, SHAP drivers, and DiCE counterfactual planning."
+readme = "README.md"
+requires-python = ">=3.10,<3.13"
+license = { text = "MIT" }
+authors = [{ name = "Emir Huseyin Inci" }]
+dependencies = [
+    "dice-ml>=0.11",
+    "litestar>=2.13",
+    "numpy>=1.26",
+    "pandas>=2.2",
+    "pydantic>=2.7",
+    "scikit-learn>=1.4",
+    "shap>=0.45",
+    "typer>=0.12",
+    "uvicorn>=0.30",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=5.0",
+    "ruff>=0.6",
+]
+
+[project.scripts]
+lead-score-lab = "counterfactual_lead_scoring_lab.cli:app"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--basetemp=.pytest_tmp --cov=counterfactual_lead_scoring_lab --cov-report=term-missing"
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM", "RUF"]
+ignore = ["B008"]
+
