@@ -26,14 +26,18 @@ from counterfactual_lead_scoring_lab.schemas import (
 
 def train_lead_model(frame: pd.DataFrame, config: LeadTrainingConfig) -> LeadModelReport:
     pipeline, top_drivers, auc, holdout_rows = fit_pipeline(frame, config)
-    probabilities = pipeline.predict_proba(frame[FEATURE_COLUMNS])[:, 1]
+    # Reconstruct the same split to score held-out rows (avoids in-sample inflation)
+    _, test_frame = train_test_split(
+        frame,
+        test_size=config.test_size,
+        random_state=config.random_state,
+        stratify=frame["converted"].astype(int),
+    )
+    sample_frame = test_frame.head(8)
+    sample_probs = pipeline.predict_proba(sample_frame[FEATURE_COLUMNS])[:, 1]
     sample_scores = [
-        _score_row(row, float(probability), top_drivers)
-        for row, probability in zip(
-            frame.head(8).to_dict(orient="records"),
-            probabilities[:8],
-            strict=True,
-        )
+        _score_row(row, float(prob), top_drivers)
+        for row, prob in zip(sample_frame.to_dict(orient="records"), sample_probs, strict=True)
     ]
 
     return LeadModelReport(
