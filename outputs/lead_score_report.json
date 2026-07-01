@@ -1,0 +1,190 @@
+﻿{
+  "rows": 1200,
+  "conversion_rate": 0.3417,
+  "roc_auc": 0.9338,
+  "holdout_rows": 300,
+  "feature_count": 10,
+  "evidence_checks": [
+    {
+      "check": "holdout_split",
+      "status": "pass",
+      "evidence": "300 rows reserved for holdout scoring; test_size=0.25."
+    },
+    {
+      "check": "minimum_class_count",
+      "status": "pass",
+      "evidence": "Class counts: {0: 790, 1: 410}."
+    },
+    {
+      "check": "target_leakage_scan",
+      "status": "pass",
+      "evidence": "No obvious post-conversion columns found."
+    },
+    {
+      "check": "counterfactual_boundary",
+      "status": "pass",
+      "evidence": "Action hints are limited to reviewable behavior and routing fields."
+    }
+  ],
+  "top_drivers": [
+    {
+      "feature": "time_on_site_seconds",
+      "importance": 0.25825
+    },
+    {
+      "feature": "activity_score",
+      "importance": 0.20403
+    },
+    {
+      "feature": "occupation_unknown",
+      "importance": 0.17521
+    },
+    {
+      "feature": "lead_origin_lead_add_form",
+      "importance": 0.15569
+    },
+    {
+      "feature": "profile_score",
+      "importance": 0.07014
+    },
+    {
+      "feature": "occupation_working_professional",
+      "importance": 0.03312
+    },
+    {
+      "feature": "total_visits",
+      "importance": 0.0199
+    },
+    {
+      "feature": "page_views_per_visit",
+      "importance": 0.01727
+    }
+  ],
+  "sample_scores": [
+    {
+      "prospect_id": "71abbcb0-ea53-4e29-affd-7ab4151a41a8",
+      "conversion_probability": 0.8941,
+      "tier": "hot",
+      "top_reasons": [
+        "time_on_site_seconds",
+        "activity_score",
+        "occupation_unknown"
+      ],
+      "recommended_actions": [
+        "Route to sales today.",
+        "Use the strongest driver as the opening context.",
+        "Offer a direct demo or consultation slot."
+      ]
+    },
+    {
+      "prospect_id": "8ed7528c-c4a0-4e52-b1b4-a56d63f81154",
+      "conversion_probability": 0.9825,
+      "tier": "hot",
+      "top_reasons": [
+        "time_on_site_seconds",
+        "activity_score",
+        "occupation_unknown"
+      ],
+      "recommended_actions": [
+        "Route to sales today.",
+        "Use the strongest driver as the opening context.",
+        "Offer a direct demo or consultation slot."
+      ]
+    },
+    {
+      "prospect_id": "2c165c73-6832-4e15-ada3-e91b1c44b9bd",
+      "conversion_probability": 0.1099,
+      "tier": "nurture",
+      "top_reasons": [
+        "time_on_site_seconds",
+        "activity_score",
+        "occupation_unknown"
+      ],
+      "recommended_actions": [
+        "Keep in low-touch nurture.",
+        "Do not spend sales time until engagement improves.",
+        "Retest after a new visit, email open, or demo request."
+      ]
+    },
+    {
+      "prospect_id": "0481b169-304f-4814-85bf-65af5688b954",
+      "conversion_probability": 0.4975,
+      "tier": "warm",
+      "top_reasons": [
+        "time_on_site_seconds",
+        "activity_score",
+        "occupation_unknown"
+      ],
+      "recommended_actions": [
+        "Send a targeted follow-up within 48 hours.",
+        "Move the lead into a short nurture sequence.",
+        "Ask one qualifying question before routing to sales."
+      ]
+    },
+    {
+      "prospect_id": "435cb827-db56-4301-9f5e-14e1be5a9ffd",
+      "conversion_probability": 0.3495,
+      "tier": "nurture",
+      "top_reasons": [
+        "time_on_site_seconds",
+        "activity_score",
+        "occupation_unknown"
+      ],
+      "recommended_actions": [
+        "Keep in low-touch nurture.",
+        "Do not spend sales time until engagement improves.",
+        "Retest after a new visit, email open, or demo request."
+      ]
+    },
+    {
+      "prospect_id": "f8c8282b-33dd-4558-89c1-9eeb4650b433",
+      "conversion_probability": 0.1127,
+      "tier": "nurture",
+      "top_reasons": [
+        "time_on_site_seconds",
+        "activity_score",
+        "occupation_unknown"
+      ],
+      "recommended_actions": [
+        "Keep in low-touch nurture.",
+        "Do not spend sales time until engagement improves.",
+        "Retest after a new visit, email open, or demo request."
+      ]
+    },
+    {
+      "prospect_id": "7995a0f7-1ccf-4ed2-ab58-84ead32cef00",
+      "conversion_probability": 0.0832,
+      "tier": "nurture",
+      "top_reasons": [
+        "time_on_site_seconds",
+        "activity_score",
+        "occupation_unknown"
+      ],
+      "recommended_actions": [
+        "Keep in low-touch nurture.",
+        "Do not spend sales time until engagement improves.",
+        "Retest after a new visit, email open, or demo request."
+      ]
+    },
+    {
+      "prospect_id": "63ebde80-a465-4cdc-ab5a-5e880a7138b0",
+      "conversion_probability": 0.9854,
+      "tier": "hot",
+      "top_reasons": [
+        "time_on_site_seconds",
+        "activity_score",
+        "occupation_unknown"
+      ],
+      "recommended_actions": [
+        "Route to sales today.",
+        "Use the strongest driver as the opening context.",
+        "Offer a direct demo or consultation slot."
+      ]
+    }
+  ],
+  "counterfactual_playbook": [
+    "Start counterfactual review with time_on_site_seconds; test whether changing it is actionable.",
+    "Keep immutable fields fixed and test only behaviors a sales or marketing team can influence.",
+    "Use hot leads for direct sales follow-up, warm leads for nurture, and low leads for automation."
+  ]
+}

@@ -23,7 +23,7 @@ def train(
     output: OutputFormat = OutputFormat.summary,
 ) -> None:
     """Train lead scoring model and display tier breakdown and counterfactual playbook."""
-    report = train_lead_model(load_leads(csv_path), LeadTrainingConfig(min_rows=10))
+    report = train_lead_model(load_leads(csv_path), LeadTrainingConfig())
 
     if output == OutputFormat.json:
         typer.echo(report.model_dump_json(indent=2))
@@ -59,7 +59,7 @@ def train(
                 f"p={score.conversion_probability:.3f}"
             )
             if score.recommended_actions:
-                typer.echo(f"    → {score.recommended_actions[0]}")
+                typer.echo(f"    -> {score.recommended_actions[0]}")
 
     typer.echo("")
     typer.echo("Counterfactual Playbook")

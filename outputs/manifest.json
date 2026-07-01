@@ -1,0 +1,13 @@
+﻿{
+  "run_at": "2026-07-01T06:24:24Z",
+  "runtime_seconds": 2.5,
+  "cli": "uv run lead-score-lab --csv-path examples/leads.csv",
+  "input": "examples/leads.csv",
+  "rows_trained": 1200,
+  "holdout_rows": 300,
+  "conversion_rate": 0.3417,
+  "roc_auc": 0.9338,
+  "feature_count": 10,
+  "all_evidence_checks": "pass",
+  "outputs": ["outputs/lead_score_report.json"]
+}

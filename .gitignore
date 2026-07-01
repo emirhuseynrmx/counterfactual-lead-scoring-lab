@@ -9,5 +9,8 @@ htmlcov/
 dist/
 build/
 *.egg-info/
-outputs/
+outputs/*
+!outputs/.gitkeep
+!outputs/lead_score_report.json
+!outputs/manifest.json
 
