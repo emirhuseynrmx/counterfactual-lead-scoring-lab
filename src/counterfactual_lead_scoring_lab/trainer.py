@@ -12,8 +12,6 @@ from sklearn.model_selection import StratifiedKFold, cross_val_score, train_test
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
-optuna.logging.set_verbosity(optuna.logging.WARNING)
-
 from counterfactual_lead_scoring_lab.data import (
     BOOLEAN_FEATURES,
     CATEGORICAL_FEATURES,
@@ -28,9 +26,11 @@ from counterfactual_lead_scoring_lab.schemas import (
     LeadTrainingConfig,
 )
 
+optuna.logging.set_verbosity(optuna.logging.WARNING)
+
 
 def train_lead_model(frame: pd.DataFrame, config: LeadTrainingConfig) -> LeadModelReport:
-    pipeline, x_train, x_test, y_train, y_test = fit_pipeline(frame, config)
+    pipeline, x_train, x_test, _y_train, y_test = fit_pipeline(frame, config)
     auc = roc_auc_score(y_test, pipeline.predict_proba(x_test)[:, 1])
     holdout_rows = len(x_test)
 
@@ -64,7 +64,7 @@ def score_lead(
     lead: LeadRecord,
     config: LeadTrainingConfig,
 ) -> LeadScore:
-    pipeline, x_train, x_test, _, _ = fit_pipeline(frame, config)
+    pipeline, _x_train, x_test, _, _ = fit_pipeline(frame, config)
     top_drivers = _drivers_shap(pipeline, x_test)
     probability = float(pipeline.predict_proba(lead_to_frame(lead))[:, 1][0])
     return _score_row(lead.model_dump(), probability, top_drivers)
@@ -192,7 +192,7 @@ def _dice_playbook(
     try:
         import dice_ml
 
-        train_with_target = full_frame[FEATURE_COLUMNS + ["converted"]].copy()
+        train_with_target = full_frame[[*FEATURE_COLUMNS, "converted"]].copy()
 
         d = dice_ml.Data(
             dataframe=train_with_target,
@@ -229,7 +229,7 @@ def _dice_playbook(
             return _fallback_playbook(x_test, pipeline)
 
         suggestions = []
-        for i, cf_row in enumerate(cf_df.to_dict(orient="records")):
+        for _i, cf_row in enumerate(cf_df.to_dict(orient="records")):
             cf_features = {col: cf_row[col] for col in FEATURE_COLUMNS}
             cf_frame = pd.DataFrame([cf_features])
             cf_prob = float(pipeline.predict_proba(cf_frame)[:, 1][0])
@@ -255,7 +255,7 @@ def _dice_playbook(
                 f"Nurture lead at p={original_prob:.2f}. "
                 "DiCE counterfactual paths to conversion (behavioral changes only):"
             )
-            return [header] + suggestions[:3]
+            return [header, *suggestions[:3]]
 
     except Exception:
         pass
