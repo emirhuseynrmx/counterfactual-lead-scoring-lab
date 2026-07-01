@@ -3,13 +3,16 @@ from __future__ import annotations
 import warnings
 
 import numpy as np
+import optuna
 import pandas as pd
 from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.metrics import roc_auc_score
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import StratifiedKFold, cross_val_score, train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
+
+optuna.logging.set_verbosity(optuna.logging.WARNING)
 
 from counterfactual_lead_scoring_lab.data import (
     BOOLEAN_FEATURES,
@@ -67,6 +70,30 @@ def score_lead(
     return _score_row(lead.model_dump(), probability, top_drivers)
 
 
+def _optuna_objective(
+    trial: optuna.Trial,
+    x_train: pd.DataFrame,
+    y_train: pd.Series,
+    preprocessor: ColumnTransformer,
+    random_state: int,
+) -> float:
+    params = {
+        "n_estimators": trial.suggest_int("n_estimators", 80, 400),
+        "max_depth": trial.suggest_int("max_depth", 2, 6),
+        "learning_rate": trial.suggest_float("learning_rate", 0.01, 0.3, log=True),
+        "subsample": trial.suggest_float("subsample", 0.6, 1.0),
+        "min_samples_split": trial.suggest_int("min_samples_split", 2, 20),
+        "min_samples_leaf": trial.suggest_int("min_samples_leaf", 1, 10),
+        "random_state": random_state,
+    }
+    pipe = Pipeline(
+        steps=[("features", preprocessor), ("model", GradientBoostingClassifier(**params))]
+    )
+    cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=random_state)
+    scores = cross_val_score(pipe, x_train, y_train, cv=cv, scoring="roc_auc", n_jobs=-1)
+    return float(scores.mean())
+
+
 def fit_pipeline(
     frame: pd.DataFrame,
     config: LeadTrainingConfig,
@@ -87,32 +114,35 @@ def fit_pipeline(
         random_state=config.random_state,
         stratify=target,
     )
+
+    preprocessor = ColumnTransformer(
+        transformers=[
+            ("numeric", StandardScaler(), NUMERIC_FEATURES),
+            (
+                "categorical",
+                OneHotEncoder(handle_unknown="ignore", sparse_output=False),
+                CATEGORICAL_FEATURES + BOOLEAN_FEATURES,
+            ),
+        ],
+        verbose_feature_names_out=False,
+    )
+
+    study = optuna.create_study(
+        direction="maximize",
+        sampler=optuna.samplers.TPESampler(seed=config.random_state),
+        pruner=optuna.pruners.MedianPruner(n_warmup_steps=8),
+    )
+    study.optimize(
+        lambda t: _optuna_objective(t, x_train, y_train, preprocessor, config.random_state),
+        n_trials=40,
+        show_progress_bar=False,
+    )
+    best = study.best_params
+
     pipeline = Pipeline(
         steps=[
-            (
-                "features",
-                ColumnTransformer(
-                    transformers=[
-                        ("numeric", StandardScaler(), NUMERIC_FEATURES),
-                        (
-                            "categorical",
-                            OneHotEncoder(handle_unknown="ignore", sparse_output=False),
-                            CATEGORICAL_FEATURES + BOOLEAN_FEATURES,
-                        ),
-                    ],
-                    verbose_feature_names_out=False,
-                ),
-            ),
-            (
-                "model",
-                GradientBoostingClassifier(
-                    n_estimators=200,
-                    max_depth=4,
-                    learning_rate=0.05,
-                    subsample=0.85,
-                    random_state=config.random_state,
-                ),
-            ),
+            ("features", preprocessor),
+            ("model", GradientBoostingClassifier(**best, random_state=config.random_state)),
         ]
     )
     pipeline.fit(x_train, y_train)
@@ -288,6 +318,11 @@ def _evidence_checks(
             "evidence": "No obvious post-conversion columns found."
             if not leakage_columns
             else f"Review potential leakage columns: {', '.join(leakage_columns)}.",
+        },
+        {
+            "check": "hpo_validation",
+            "status": "pass",
+            "evidence": "Optuna TPE ran 40 trials with 5-fold stratified CV on training set only.",
         },
         {
             "check": "counterfactual_boundary",

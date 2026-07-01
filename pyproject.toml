@@ -16,6 +16,7 @@ dependencies = [
     "litestar>=2.13",
     "numba>=0.59",
     "numpy>=1.26",
+    "optuna>=3.0",
     "pandas>=2.2",
     "pandera>=0.21",
     "pydantic>=2.7",
